@@ -21,7 +21,7 @@ function checksExistsUserAccount(request, response, next) {
 
   } else {
 
-    response.status(400).json({erro: "User not found"})
+    response.status(404).json({error: "User not found"})
 
   }
 }
@@ -30,16 +30,26 @@ app.post('/users', (request, response) => {
   
   const { name, username } = request.body
 
-  const user = {
-    id: uuidv4(),
-    name: name,
-    username: username,
-    todos: []
-  }
+  const isUsernameNotAvailable = users.find(user => user.username === username)
 
-  users.push(user)
+  if (!isUsernameNotAvailable) {
+    
+    const user = {
+      id: uuidv4(),
+      name: name,
+      username: username,
+      todos: []
+    }
   
-  response.status(201).json(user)
+    users.push(user)
+    
+    response.status(201).json(user)
+  
+  } else {
+
+    response.status(400).json({error: "User already exists"})
+
+  }
   
 });
 
@@ -81,10 +91,18 @@ app.put('/todos/:id', checksExistsUserAccount, (request, response) => {
   const user = users.find(user => user.username === username)
   const todo = user.todos.find(todo => todo.id === id)  
 
-  todo.title = title;
-  todo.deadline = deadline;
+  if (todo) { 
 
-  response.status(200).json(todo)
+    todo.title = title;
+    todo.deadline = deadline;
+  
+    response.status(200).json(todo)
+
+  } else {
+
+    response.status(404).json({error: "Todo not found"})
+
+  }
 
 });
 
@@ -96,7 +114,15 @@ app.patch('/todos/:id/done', checksExistsUserAccount, (request, response) => {
   const user = users.find(user => user.username === username)
   const todo = user.todos.find(todo => todo.id === id) 
 
-  todo.done = true
+  if (todo) {
+
+    todo.done = true
+
+  } else {
+
+    response.status(404).json({error: "Todo not found"})
+
+  }
 
   response.status(200).json(todo)
 
@@ -108,10 +134,17 @@ app.delete('/todos/:id', checksExistsUserAccount, (request, response) => {
   const { id } = request.params
   
   const user = users.find(user => user.username === username)
-  user.todos.pop(todo => todo.id === id)
+  const todo = user.todos.pop(todo => todo.id === id)
 
-  response.status(200).json(user)
+  if (todo) {
 
+    response.status(204).json(user)
+
+  } else { 
+
+    response.status(404).json({error: "Todo not found"})
+
+  }
 });
 
 module.exports = app;
